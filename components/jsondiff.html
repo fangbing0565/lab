@@ -100,7 +100,7 @@
             json 修改
         </div>
         <div class="editor-container">
-            <textarea name="" id="editor" cols="30" rows="10"></textarea>
+            <textarea name="" id="editor" cols="30" rows="10">rightValue[0].data[0].name = 123</textarea>
         </div>
     </div>
 </body>
@@ -215,7 +215,7 @@
     setLeft(leftValue)
     setRight(rightValue)
     const editorNode = document.querySelector('#editor')
-    editorNode.addEventListener('change', change)
+    editorNode.addEventListener('blur', change)
     // editorNode.removeEventListener('change',change)
     function change(e) {
         // rightValue[0].data[0].name = 123
@@ -241,6 +241,7 @@
         try {
             rightValue = historyInstance.undo(rightValue)
             render(rightValue)
+            renderError()
         } catch (error) {
             renderError(error)
         }
@@ -249,6 +250,7 @@
         try {
             rightValue = historyInstance.redo(rightValue)
             render(rightValue)
+            renderError()
         } catch (error) {
             renderError(error)
         }
@@ -257,7 +259,7 @@
         const stringifyJson = JSON.stringify(value, null, 1)
         container.textContent = stringifyJson
     }
-    function renderError(error) {
+    function renderError(error = '') {
         errorContainer.textContent = error
     }
 </script>
