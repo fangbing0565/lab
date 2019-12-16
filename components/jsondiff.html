@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>json diff</title>
+    <style>
+        .json-container {
+            display: flex;
+            justify-content: center;
+        }
+
+        .tree {
+            margin: 0 0 100px;
+            width: 40%;
+            height: 400px;
+        }
+
+        .center {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 10px;
+            width: 10%;
+            height: 400px;
+        }
+
+        .content {
+            height: 100%;
+            width: 100%;
+            overflow: auto;
+        }
+
+        .undo {
+            margin-bottom: 12px;
+        }
+
+        .redo {
+            margin-bottom: 12px;
+        }
+
+        .redirect {
+            margin-bottom: 12px;
+            width: 120px;
+        }
+
+        .error-content {
+            color: red;
+            font-size: 12px;
+        }
+
+        .editor-box {
+            width: 100%;
+            height: 100px;
+        }
+
+        .operate {
+            margin: 0 5%;
+            width: 90%;
+        }
+
+        .editor-container {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        #editor {
+            width: 90%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="json-container">
+        <div class="tree left">
+            <div>left</div>
+            <textarea class="content left-content" name="" id="" cols="30" rows="10"></textarea>
+        </div>
+        <div class="center">
+            <div class="undo">
+                撤销
+            </div>
+            <div class="redo">
+                重做
+            </div>
+            <select name="" id="redirect">
+            </select>
+            <div class="error-content">
+
+            </div>
+        </div>
+        <div class="tree right">
+            <div>right</div>
+            <textarea class="content right-content" name="" id="" cols="30" rows="10"></textarea>
+        </div>
+    </div>
+    <div class="editor-box">
+        <div class="operate">
+            json 修改
+        </div>
+        <div class="editor-container">
+            <textarea name="" id="editor" cols="30" rows="10"></textarea>
+        </div>
+    </div>
+</body>
+<script type="module">
+    import { defaultValue } from './constants.js'
+    // 记录历史
+    class RedoUndoHistory {
+        constructor() {
+            this.history = [] // 最多存 20步骤
+            this.lastValue
+            this.currentStep = -1 // 当前位于哪一步
+        }
+
+        clearHistory() {
+            this.history = []
+            return this.history
+        }
+        addHistory(value) {
+            // 去做diff 比较
+            const changeData = this.diff(this.lastValue, value)
+            if (!changeData.length) return
+            this.history.push(this.diff(this.lastValue, value))
+            this.lastValue = JSON.parse(JSON.stringify(value))
+            this.currentStep++
+        }
+        redo(value) {
+            // 基于变更记录重做一步
+            if (this.currentStep === this.history.length - 1) throw Error('没有更新的记录')  // 最后一步
+            this.history[this.currentStep + 1].forEach(({ oldVal, newVal, parents }, index) => {
+                parents.reduce((result, key, index) => {
+                    if (index === parents.length - 1) {
+                        result[key] = newVal
+                    }
+                    return result[key]
+                }, value)
+            })
+            this.currentStep++
+            return value
+        }
+        undo(value) {
+            // 基于变更记录撤销一步
+            if (this.currentStep === 0) throw Error('已经是最后一步') // 最后一步
+            this.history[this.currentStep].forEach(({ oldVal, newVal, parents }, index) => {
+                parents.reduce((result, key, index) => {
+                    if (index === parents.length - 1) {
+                        result[key] = oldVal
+                    }
+                    return result[key]
+                }, value)
+            })
+            this.currentStep--
+            return value
+        }
+
+        redirect() {
+
+        }
+        checkLength() {
+
+        }
+        diff(oldVal, newVal, parents = [], history = []) {
+            if (this.typeofReal(history) !== 'array') debugger
+            let newHistory = [...history]
+            const typeA = this.typeofReal(oldVal);
+            const typeB = this.typeofReal(newVal);
+            const defaultChanges = [{ oldVal, newVal, parents }]
+            // 值类型不一样，完全改变，不用向下diff
+            if (typeA !== typeB) {
+                return [].concat(history, defaultChanges)
+            }
+            // 无效值类型，认为没有变更
+            if (['undefined', 'null'].includes(typeA)) {
+                return history
+            }
+            // todo  NaN Symbol 类型不相等
+
+            // 基本数据类型，直接简单比较值是否相等
+            if (!['array', 'object'].includes(typeA)) {
+                return oldVal === newVal ? history : [].concat(history, defaultChanges)
+            }
+            if ('object' === typeA) {
+                const allKeys = Array.from(new Set([...Object.keys(oldVal), ...Object.keys(newVal)]))
+                return allKeys.reduce((result, objectKey, index) => this.diff(oldVal[objectKey], newVal[objectKey], [...parents, objectKey], result), newHistory)
+            }
+            if ('array' === typeA) {
+                if (oldVal.length < newVal.length) {
+                    return newVal.reduce((result, item, index) => this.diff(oldVal[index], item, [...parents, index], result), newHistory)
+                } else {
+                    return oldVal.reduce((result, item, index) => this.diff(item, newVal[index], [...parents, index], result), newHistory)
+                }
+            }
+            else {
+                // 没考虑的类型 ？
+                debugger
+            }
+
+        }
+        isArray(value) {
+            return value && typeof value === "object" && value.constructor === Array;
+        }
+        typeofReal(value) {
+            return this.isArray(value) ? "array" : typeof value;
+        }
+    }
+    const historyInstance = new RedoUndoHistory()
+
+    const leftContainer = document.querySelector('.left-content')
+    const rightContainer = document.querySelector('.right-content')
+    const errorContainer = document.querySelector('.error-content')
+    let leftValue = JSON.parse(JSON.stringify(defaultValue))
+    let rightValue = JSON.parse(JSON.stringify(defaultValue))
+    setLeft(leftValue)
+    setRight(rightValue)
+    const editorNode = document.querySelector('#editor')
+    editorNode.addEventListener('change', change)
+    // editorNode.removeEventListener('change',change)
+    function change(e) {
+        // rightValue[0].data[0].name = 123
+        const value = e.target.value
+        eval(value)
+        setRight(rightValue)
+        console.error('change', historyInstance.history)
+    }
+    function setLeft(value) {
+        historyInstance.addHistory(value)
+        render(value, leftContainer)
+    }
+    function setRight(value) {
+        historyInstance.addHistory(value)
+        render(value)
+    }
+
+    const undoNode = document.querySelector('.undo')
+    const redoNode = document.querySelector('.redo')
+    undoNode.addEventListener('click', undo)
+    redoNode.addEventListener('click', redo)
+    function undo(value) {
+        try {
+            rightValue = historyInstance.undo(rightValue)
+            render(rightValue)
+        } catch (error) {
+            renderError(error)
+        }
+    }
+    function redo() {
+        try {
+            rightValue = historyInstance.redo(rightValue)
+            render(rightValue)
+        } catch (error) {
+            renderError(error)
+        }
+    }
+    function render(value, container = rightContainer) {
+        const stringifyJson = JSON.stringify(value, null, 1)
+        container.textContent = stringifyJson
+    }
+    function renderError(error) {
+        errorContainer.textContent = error
+    }
+</script>
+
+</html>
