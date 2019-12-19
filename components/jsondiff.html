@@ -74,7 +74,7 @@
 <body>
     <div class="json-container">
         <div class="tree left">
-            <div>left</div>
+            <div>leftValue</div>
             <textarea class="content left-content" name="" id="" cols="30" rows="10"></textarea>
         </div>
         <div class="center">
@@ -91,7 +91,7 @@
             </div>
         </div>
         <div class="tree right">
-            <div>right</div>
+            <div>rightValue</div>
             <textarea class="content right-content" name="" id="" cols="30" rows="10"></textarea>
         </div>
     </div>
@@ -162,10 +162,10 @@
 
         }
         diff(oldVal, newVal, parents = [], history = []) {
-            if (this.typeofReal(history) !== 'array') debugger
+            if (this.valueType(history) !== 'array') debugger
             let newHistory = [...history]
-            const typeA = this.typeofReal(oldVal);
-            const typeB = this.typeofReal(newVal);
+            const typeA = this.valueType(oldVal);
+            const typeB = this.valueType(newVal);
             const defaultChanges = [{ oldVal, newVal, parents }]
             // 值类型不一样，完全改变，不用向下diff
             if (typeA !== typeB) {
@@ -196,13 +196,15 @@
                 // 没考虑的类型 ？
                 debugger
             }
-
         }
-        isArray(value) {
-            return value && typeof value === "object" && value.constructor === Array;
-        }
-        typeofReal(value) {
-            return this.isArray(value) ? "array" : typeof value;
+        valueType(value) {
+            if (value === null) return 'null'
+            if (typeof value === undefined) return 'undefined'
+            if (value === 'symbol') return 'symbol'
+            if (typeof value === 'boolean') return 'boolean'
+            if (!value || typeof value === 'string') return 'string' // 不存在跟空字符串合并处理
+            if (Array.isArray(value)) return 'array'
+            return 'object'
         }
     }
     const historyInstance = new RedoUndoHistory()
