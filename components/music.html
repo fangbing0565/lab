@@ -7,23 +7,30 @@
     <style>
         .music {
             background-image: url("https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1579278118&di=7e60404a37488b2650ce267656ce7afe&imgtype=jpg&er=1&src=http%3A%2F%2Fimg3.ixingmei.com%2Fupload%2Fshop%2Fstore%2Fgoods%2Fyl%2Fyl_d3550209751238_1845_x.jpg");
-            background-repeat: no-repeat;
-            background-size: cover;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
         .content {
-            width: 70vw;
+            width: 100vw;
             height: 70vh;
+            line-height: 70vh;
+            display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+        }
+        .content >div{
+            height: 33%;
         }
 
         .wrapper {
             display: flex;
             width: 100%;
+            height: 100%;
         }
 
         .line {
@@ -33,68 +40,142 @@
             ;
             color: rgb(233, 123, 63);
             font-style: italic;
+            font-family: YouYuan;
+            font-weight: bold;    
+        }
+        .line>span{
+            background: rgba(255,255,255,0.3);
+    border-radius: 20%;
+    padding: 0 20px;
         }
 
+
         .line2 {
-            margin-top: 40px;
+            margin-top: 50px;
             margin-left: -120px;
             text-align: left;
         }
 
-        .first .line {
+        .null .line {
             color: rgb(202, 156, 120);
             font-size: 32px;
         }
-        .third .line {
-            color: rgb(202, 156, 120);
-            font-size: 32px;
+        .name{
+            font-family: YouYuan;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            line-height: 100%;
+            text-align: center;
+            font-size: 100px;
+            color:rgb(233, 123, 63)
+        }
+        .start{
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 200px;
+            background: green;
+            color: red;
+            font-family: YouYuan;
+            font-weight: bold;
+            text-align: center;
+            height: 30px;
+            border-radius: 5%;
+            font-size: 20px;
+            line-height: 30px;
+            cursor: pointer;
+        }
+        .nameBefore{
+            display: flex;
+    align-items: center;
+    justify-content: center;
+        }
+        body{
+            overflow: hidden;
         }
     </style>
 </head>
 
-<body>
+<body >
+    <div class="name nameBefore">
+        童年
+    </div>
     <div class="music">
         <div class="content">
-            <div class="first">
-            </div>
-            <div class="second">
-            </div>
-            <div class="third">
-            </div>
         </div>
+    </div>
+    <div class="start">
+        开 始
     </div>
 </body>
 <script type="module">
-    let index = 0
+    let active = -1
+    let timer
     let content = [
         ['今天我们来吐槽一下', '英诺伟的工作和文化'],
+        ['工作在上海的我们', '下班后还要不停地加班'],
+        ['每天有许多的工作正在', '拼命敲敲打打写个不停'],
+        ['一天又一天，一年又一年', '坚持是否有突破'],
+        ['一天又一天，一年又一年', '总是盼望着加钱'],
+        ['盼望着突破，盼望着加钱', '盼望公司的未来'],
         ['今天我们来吐槽一下', '英诺伟的工作和文化'],
-        ['今天我们来吐槽一下', '英诺伟的工作和文化'],
+        ['工作在上海的我们', '下班后还要不停地加班'],
+        ['每天有许多的工作正在', '拼命敲敲打打写个不停'],
+        ['一天又一天，一年又一年', '坚持是否有突破'],
+        ['一天又一天，一年又一年', '总是盼望着加钱'],
+        ['盼望着突破，盼望着加钱', '盼望公司的未来'],
     ]
-    updateContent()
-    run()
-
+    document.querySelector('.start').addEventListener('click',createContent)
     function run() {
-        setTimeout(update, 5000)
+        timer = setInterval(update, 7000)
     }
     function update() {
-        index++
+        if(active == 0){
+            const node = document.querySelector('.name')
+            node.setAttribute('style','display:none')
+        }
+        active++
         updateContent()
     }
-    function updateContent() {
-        const first = document.querySelector('.first')
-        const second = document.querySelector('.second')
-        const third = document.querySelector('.third')
-        first.innerHTML = fillContent(index - 1)
-        second.innerHTML = fillContent(index)
-        third.innerHTML = fillContent(index + 1)
+    function createContent() {
+        let nameNode = document.querySelector('.name')
+        let classVal = nameNode.getAttribute('class')
+        classVal = classVal.replace('nameBefore','')
+        nameNode.setAttribute('class', classVal)
+        nameNode.setAttribute('style','font-size:80px;margin-top:100px')
+
+        clearInterval(timer)
+        active = 0
+        const node = document.querySelector('.content')
+        node.innerHTML = content.map((item, index)=>`
+            <div class="child child-${index} ${active === index ? 'active': null}">
+                ${fillContent(item)}
+            </div>`
+        ).join('')
+        run()
     }
-    function fillContent(ind) {
-        if (ind < 0) return ''
+    function updateContent(){
+        const node = document.querySelector('.content')
+        const childrens = Array.from( node.childNodes).filter(i=>i.nodeName === 'DIV')
+        let classVal = childrens[active-1].getAttribute('class')
+        let classVal1 = childrens[active].getAttribute('class')
+        classVal = classVal.replace('active','null')
+        classVal1 = classVal1.replace('null','active')
+        childrens[active-1].setAttribute('class', classVal)
+        childrens[active].setAttribute('class', classVal1)
+
+        // childrens 更新transform
+        childrens.forEach(child=>
+        {
+            child.setAttribute('style', `transform:translate(0px,${-100*(active)}%);`);
+        })
+    }
+    function fillContent(item) {
         return (
             `<div class="wrapper">
-                <div class="line">${content[ind][0]}</div>
-                <div class="line line2">${content[ind][1]}</div>
+                <div class="line"><span>${item[0]}</span></div>
+                <div class="line line2"><span>${item[1]}</span></div>
             </div>`
         )
     }
