@@ -1,4 +1,4 @@
-var list = [];//
+var list = [];
 var list_id = [];
 onconnect = function(e) {
     var port = e.ports[0];
